@@ -1,3 +1,5 @@
+#ifndef __IMAGEPROC_H__
+#define __IMAGEPROC_H__
 //#include <jni.h>
 //#include <android/log.h>
 //#include <android/bitmap.h>
@@ -26,6 +28,10 @@
 
 #include <pthread.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define  LOG_TAG    "WebCam"
 #define  LOGI(...)  printf(__VA_ARGS__)//__android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
 #define  LOGE(...)  printf(__VA_ARGS__)//__android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
@@ -34,72 +40,61 @@
 #define IMG_HEIGHT 720
 
 typedef struct{
-        void *ptr;
-        size_t length;
+    void *ptr;
+    size_t length;
 }buffer;
 
 typedef enum{
     CLOSE=0,OPEN=1
 }device_status;
 
+struct v4l2_device;
+typedef int (* image_proc_callback)(const struct v4l2_device *device);
+
 typedef struct v4l2_device{
-	char dev_path[16];
+    char dev_path[16];
     char dev_name[32];
-	int fd;
+    int fd;
+    struct v4l2_format cur_fmt;
     buffer *buf;
     int buf_size;
-	v4l2_device *next;
-	v4l2_device *prev;
-	pthread_mutex_t lock;
+    image_proc_callback image_proc_cb;  //callback function for image processing
+    struct v4l2_device *next;
+    struct v4l2_device *prev;
+    pthread_mutex_t lock;
     device_status status;
 }v4l2_device_node;
 
 typedef struct{
-	v4l2_device_node *head;
-	v4l2_device_node *tail;
+    v4l2_device_node *head;
+    v4l2_device_node *tail;
     int length;
 }v4l2_device_list;
 
+//local functions
+static int v4l2_device_list_init(v4l2_device_list *list);
+static int v4l2_device_list_add(v4l2_device_list *list,v4l2_device_node *device);
+static int v4l2_device_list_destory(v4l2_device_list *list);
+static int errno_info(const char *str);
+static int xioctl(int fd, int request, void *arg);
+static void process_image(const v4l2_device_node *device);
 
-static char            dev_name[16];
-static int              fd              = -1;
-struct buffer *         buffers         = NULL;
-static unsigned int     n_buffers       = 0;
+//export functions
+/* find v4l2 devices */
+int find_devices(v4l2_device_list *v4l2_cameras);
+/* init & activate the device */
+int setup_device(v4l2_device_node *device);
+int close_device(v4l2_device_node *device);
+int start_capture(v4l2_device_node *device);
+int stop_capture(v4l2_device_node *device);
+int read_frameonce(v4l2_device_node *device);
 
-int camerabase = -1;
+//export util functions
+int yuyv422_to_abgr(unsigned char *dst,unsigned char *src,int height,int width);
 
-int *rgb = NULL;
-int *ybuf = NULL;
+#ifdef __cplusplus
+}
+#endif
 
-int yuv_tbl_ready=0;
-int y1192_tbl[256];
-int v1634_tbl[256];
-int v833_tbl[256];
-int u400_tbl[256];
-int u2066_tbl[256];
 
-int errnoexit(const char *s);
-
-int xioctl(int fd, int request, void *arg);
-
-int checkCamerabase(void);
-int opendevice(int videoid);
-int initdevice(void);
-int initmmap(void);
-int startcapturing(void);
-
-int readframeonce(void);
-int readframe(void);
-void processimage (const void *p);
-
-int stopcapturing(void);
-int uninitdevice(void);
-int closedevice(void);
-
-void yuyv422toABGRY(unsigned char *src);
-
-jint Java_com_camera_simplewebcam_CameraPreview_prepareCamera( JNIEnv* env,jobject thiz, jint videoid);
-jint Java_com_camera_simplewebcam_CameraPreview_prepareCameraWithBase( JNIEnv* env,jobject thiz, jint videoid, jint videobase);
-void Java_com_camera_simplewebcam_CameraPreview_processCamera( JNIEnv* env,jobject thiz);
-void Java_com_camera_simplewebcam_CameraPreview_stopCamera(JNIEnv* env,jobject thiz);
-void Java_com_camera_simplewebcam_CameraPreview_pixeltobmp( JNIEnv* env,jobject thiz,jobject bitmap);                                                  
+#endif //__IMAGEPROC_H__

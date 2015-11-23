@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>629</width>
+    <width>734</width>
     <height>145</height>
    </rect>
   </property>
@@ -18,39 +18,39 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>30</y>
+      <y>20</y>
       <width>191</width>
-      <height>41</height>
+      <height>51</height>
      </rect>
     </property>
    </widget>
    <widget class="QComboBox" name="comboBox_format">
     <property name="geometry">
      <rect>
-      <x>220</x>
-      <y>30</y>
-      <width>121</width>
-      <height>41</height>
+      <x>210</x>
+      <y>20</y>
+      <width>161</width>
+      <height>51</height>
      </rect>
     </property>
    </widget>
    <widget class="QComboBox" name="comboBox_size">
     <property name="geometry">
      <rect>
-      <x>360</x>
-      <y>30</y>
+      <x>380</x>
+      <y>20</y>
       <width>121</width>
-      <height>41</height>
+      <height>51</height>
      </rect>
     </property>
    </widget>
    <widget class="QPushButton" name="pushButton_open">
     <property name="geometry">
      <rect>
-      <x>510</x>
-      <y>10</y>
-      <width>99</width>
-      <height>61</height>
+      <x>610</x>
+      <y>0</y>
+      <width>111</width>
+      <height>71</height>
      </rect>
     </property>
     <property name="text">
@@ -61,7 +61,7 @@
     <property name="geometry">
      <rect>
       <x>20</x>
-      <y>10</y>
+      <y>0</y>
       <width>67</width>
       <height>17</height>
      </rect>
@@ -73,8 +73,8 @@
    <widget class="QLabel" name="labelFormat">
     <property name="geometry">
      <rect>
-      <x>230</x>
-      <y>10</y>
+      <x>220</x>
+      <y>0</y>
       <width>67</width>
       <height>17</height>
      </rect>
@@ -86,8 +86,8 @@
    <widget class="QLabel" name="labelVideoSize">
     <property name="geometry">
      <rect>
-      <x>370</x>
-      <y>10</y>
+      <x>390</x>
+      <y>0</y>
       <width>71</width>
       <height>17</height>
      </rect>
@@ -96,13 +96,36 @@
      <string>Video Size</string>
     </property>
    </widget>
+   <widget class="QComboBox" name="comboBox_fps">
+    <property name="geometry">
+     <rect>
+      <x>510</x>
+      <y>20</y>
+      <width>85</width>
+      <height>51</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_fps">
+    <property name="geometry">
+     <rect>
+      <x>520</x>
+      <y>0</y>
+      <width>67</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>FPS</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>629</width>
+     <width>734</width>
      <height>25</height>
     </rect>
    </property>

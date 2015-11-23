@@ -120,23 +120,143 @@ int find_devices(v4l2_device_list *v4l2_cameras)
     return ret;
 }
 
-/* find v4l2 devices */
+/* enumerate the device */
+int enum_device(v4l2_device_node *device)
+{
+    int fd,i;
+    //try to open the device
+    fd = open (device->dev_path, O_RDWR, 0);
+    if (0 > fd){
+        LOGE("Cannot open '%s': %d, %s", device->dev_path, errno, strerror (errno));
+        close(fd);
+        return -1;
+    }
+    device->fmt_size = 0;
+    for(i=0;i<10;i++){ 			//enum pixel format
+        type_pixformats *pixfmt = &device->fmt_supported[i];
+        memset(pixfmt,0,sizeof(type_pixformats));
+        pixfmt->fmt.index = i;
+        pixfmt->fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+        if(0 == ioctl(fd,VIDIOC_ENUM_FMT,&pixfmt->fmt)){
+            device->fmt_size++;  //increase the supported format size
+            int ret = enum_frame_sizes(fd,pixfmt);  //enum supported frame size
+            if (ret != 0)
+                printf("  Unable to enumerate frame sizes.\n");
+        }else if(errno == EINVAL){
+            printf("Device %s format enumerate finished\n",device->dev_path);
+            break;
+        }else{
+            return errno_info("VIDIOC_ENUM_FMT");
+        }
+    }
+    //close the device
+    close(fd);
+    return 0;
+}
+
+static int enum_frame_sizes(int fd,type_pixformats *pixfmt)
+{
+    int j;
+    pixfmt->frm_sizes_len = 0;
+    for(j=0;j<10;j++){			//enum supported frame size
+        int ret;
+        type_framesizes *fsize = &pixfmt->frm_sizes[j];
+        memset(fsize,0,sizeof(type_framesizes));
+        fsize->frm_size.index = j;
+        fsize->frm_size.pixel_format = pixfmt->fmt.pixelformat;
+        ret = ioctl(fd,VIDIOC_ENUM_FRAMESIZES,&fsize->frm_size);
+        if(0==ret){
+            if (fsize->frm_size.type == V4L2_FRMSIZE_TYPE_DISCRETE) {
+                pixfmt->frm_sizes_len++;
+                printf("{ discrete: width = %u, height = %u }\n",
+                       fsize->frm_size.discrete.width, fsize->frm_size.discrete.height);
+                ret = enum_frame_intervals(fd,pixfmt,fsize);
+                if (ret != 0)
+                    printf("Unable to enumerate frame sizes.\n");
+            } else if (fsize->frm_size.type == V4L2_FRMSIZE_TYPE_CONTINUOUS) {
+                printf("{ continuous: min { width = %u, height = %u } .. "
+                       "max { width = %u, height = %u } }\n",
+                       fsize->frm_size.stepwise.min_width, fsize->frm_size.stepwise.min_height,
+                       fsize->frm_size.stepwise.max_width, fsize->frm_size.stepwise.max_height);
+                printf("Refusing to enumerate frame intervals.\n");
+                break;
+            } else if (fsize->frm_size.type == V4L2_FRMSIZE_TYPE_STEPWISE) {
+                printf("{ stepwise: min { width = %u, height = %u } .. "
+                       "max { width = %u, height = %u } / "
+                       "stepsize { width = %u, height = %u } }\n",
+                       fsize->frm_size.stepwise.min_width, fsize->frm_size.stepwise.min_height,
+                       fsize->frm_size.stepwise.max_width, fsize->frm_size.stepwise.max_height,
+                       fsize->frm_size.stepwise.step_width, fsize->frm_size.stepwise.step_height);
+                printf("Refusing to enumerate frame intervals.\n");
+                break;
+            }
+        }else if(EINVAL == errno){
+            break;
+        }else{
+            return errno_info("VIDIOC_ENUM_FRAMESIZES");
+        }
+    }
+    return 0;
+}
+
+static int enum_frame_intervals(int fd,type_pixformats *pixfmt,type_framesizes *fsize)
+{
+    int k;
+    fsize->frm_ivals_len = 0;
+    for(k=0;k<10;k++){
+        int ret;
+        struct v4l2_frmivalenum *fivals = &fsize->frm_ivals[k];
+        memset(fivals,0,sizeof(struct v4l2_frmivalenum));
+        fivals->index = k;
+        fivals->pixel_format = pixfmt->fmt.pixelformat;
+        fivals->width = fsize->frm_size.discrete.width;
+        fivals->height = fsize->frm_size.discrete.height;
+        ret = ioctl(fd,VIDIOC_ENUM_FRAMEINTERVALS,fivals);
+        if(0==ret){
+            if (fivals->type == V4L2_FRMIVAL_TYPE_DISCRETE) {
+                fsize->frm_ivals_len++;
+                printf("%u/%u, ",
+                       fivals->discrete.numerator, fivals->discrete.denominator); //输出分数
+            } else if (fivals->type == V4L2_FRMIVAL_TYPE_CONTINUOUS) {
+                printf("{min { %u/%u } .. max { %u/%u } }, ",
+                       fivals->stepwise.min.numerator, fivals->stepwise.min.numerator,
+                       fivals->stepwise.max.denominator, fivals->stepwise.max.denominator);
+                break;
+            } else if (fivals->type == V4L2_FRMIVAL_TYPE_STEPWISE) {
+                printf("{min { %u/%u } .. max { %u/%u } / "
+                       "stepsize { %u/%u } }, ",
+                       fivals->stepwise.min.numerator, fivals->stepwise.min.denominator,
+                       fivals->stepwise.max.numerator, fivals->stepwise.max.denominator,
+                       fivals->stepwise.step.numerator, fivals->stepwise.step.denominator);
+                break;
+            }
+        }else if(EINVAL == errno){
+            break;
+        }else{
+            return errno_info("VIDIOC_ENUM_FRAMEINTERVALS");
+        }
+    }
+    return 0;
+}
+
+/* clean v4l2 devices */
 int clean_devices(v4l2_device_list *v4l2_cameras)
 {
     if(NULL != v4l2_cameras)
         return v4l2_device_list_destory(v4l2_cameras);
+    else
+        return -1;
 }
 
 /* init & activate the device */
-int setup_device(v4l2_device_node *device)
+int setup_device(v4l2_device_node *device,struct v4l2_format *fmt)
 {
-    struct v4l2_format *fmt = &device->cur_fmt;
     unsigned int min;
     struct v4l2_requestbuffers buf_req;
     unsigned int i;
 
-    memset (fmt, 0, sizeof(struct v4l2_format));
     memset (&buf_req, 0, sizeof(struct v4l2_requestbuffers));
+    memcpy(&device->cur_setup_fmt,fmt,sizeof(struct v4l2_format));
 
     device->fd = open (device->dev_path, O_RDWR, 0);
     if (0 > device->fd){
@@ -144,16 +264,6 @@ int setup_device(v4l2_device_node *device)
         close(device->fd);
         return -1;
     }
-
-    fmt->type                = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-
-    fmt->fmt.pix.width       = IMG_WIDTH;
-    fmt->fmt.pix.height      = IMG_HEIGHT;
-
-    fmt->fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
-    //fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_MJPEG;
-
-    fmt->fmt.pix.field       = V4L2_FIELD_INTERLACED;
 
     if(-1 == xioctl(device->fd, VIDIOC_S_FMT, &fmt))
         return errno_info("VIDIOC_S_FMT");

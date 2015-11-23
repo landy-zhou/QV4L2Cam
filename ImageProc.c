@@ -373,7 +373,7 @@ int stop_capture(v4l2_device_node *device)
     return 0;
 }
 
-int read_frameonce(v4l2_device_node *device)
+int read_frameonce(v4l2_device_node *device,char *data,int *length)
 {
     fd_set fds;
     struct timeval timeout;
@@ -407,7 +407,7 @@ int read_frameonce(v4l2_device_node *device)
             return -1;
         }
         //hook the callback function
-        process_image(device);
+        process_image(device, &buf);
     }else if(0 == ret){
         LOGE("select timeout");
         return -1;
@@ -415,14 +415,13 @@ int read_frameonce(v4l2_device_node *device)
         return errno_info ("select");
     }
     return buf.index;
-
 }
 
-static void process_image(const v4l2_device_node *device)
+static void process_image(const v4l2_device_node *device,struct v4l2_buffer *buf)
 {
     //LOGI("%2x %2x %2x %2x",*(char*)(p),*(char*)(p+1),*(char*)(p+2),*(char*)(p+3));
     if(device->image_proc_cb)
-        device->image_proc_cb(device);
+        device->image_proc_cb(device,buf);
 }
 
 

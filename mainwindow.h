@@ -24,7 +24,7 @@ private:
     type_framesizes *selected_framesize;
     struct v4l2_frmivalenum *selected_ivals;
 
-    void frameRecvCallback(const struct v4l2_device *device);
+    image_proc_callback frameRecvCallback;
 
 public slots:
     void deviceChanged(int index);

@@ -74,11 +74,6 @@ void MainWindow::openDevice()
 
 }
 
-void MainWindow::frameRecvCallback(const struct v4l2_device *device)
-{
-
-}
-
 void MainWindow::deviceChanged(int index)
 {
     //get current selected camera devices

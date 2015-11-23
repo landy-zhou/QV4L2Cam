@@ -61,7 +61,7 @@ typedef struct{
 }type_pixformats;
 
 struct v4l2_device;
-typedef int (* image_proc_callback)(const struct v4l2_device *device);
+typedef int (* image_proc_callback)(const struct v4l2_device *device,struct v4l2_buffer *buf);
 
 typedef struct v4l2_device{
     char dev_path[16];
@@ -91,7 +91,7 @@ static int v4l2_device_list_add(v4l2_device_list *list,v4l2_device_node *device)
 static int v4l2_device_list_destory(v4l2_device_list *list);
 static int errno_info(const char *str);
 static int xioctl(int fd, int request, void *arg);
-static void process_image(const v4l2_device_node *device);
+static void process_image(const v4l2_device_node *device,struct v4l2_buffer *buf);
 static int enum_frame_sizes(int fd,type_pixformats *pixfmt);
 static int enum_frame_intervals(int fd,type_pixformats *pixfmt,type_framesizes *fsize);
 
@@ -106,7 +106,7 @@ int register_proc_cb(v4l2_device_node *device,image_proc_callback func);
 int close_device(v4l2_device_node *device);
 int start_capture(v4l2_device_node *device);
 int stop_capture(v4l2_device_node *device);
-int read_frameonce(v4l2_device_node *device);
+int read_frameonce(v4l2_device_node *device,char *data,int *length);
 
 //export util functions
 int yuyv422_to_abgr(unsigned char *dst,unsigned char *src,int height,int width);

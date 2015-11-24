@@ -32,12 +32,9 @@
 extern "C" {
 #endif
 
-#define  LOG_TAG    "WebCam"
+#define  LOG_TAG    "V4L2Cam"
 #define  LOGI(...)  printf(__VA_ARGS__)//__android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
 #define  LOGE(...)  printf(__VA_ARGS__)//__android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
-
-#define IMG_WIDTH 1280
-#define IMG_HEIGHT 720
 
 typedef struct{
     void *ptr;
@@ -70,7 +67,7 @@ typedef struct v4l2_device{
     type_pixformats fmt_supported[10];
     int fmt_size;
     struct v4l2_format cur_setup_fmt;
-    buffer *buf;
+    buffer buf[10];
     int buf_size;
     image_proc_callback image_proc_cb;  //callback function for image processing
     struct v4l2_device *next;
@@ -109,7 +106,7 @@ int stop_capture(v4l2_device_node *device);
 int read_frameonce(v4l2_device_node *device,char *data,int *length);
 
 //export util functions
-int yuyv422_to_abgr(unsigned char *dst,unsigned char *src,int height,int width);
+int yuyv422_to_abgr(char *dst,char *src,int height,int width);
 
 #ifdef __cplusplus
 }

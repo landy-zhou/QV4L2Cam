@@ -3,6 +3,8 @@
 
 #include <QMainWindow>
 #include "ImageProc.h"
+#include "paintwidget.h"
+#include "readthread.h"
 
 namespace Ui {
 class MainWindow;

@@ -54,22 +54,28 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->comboBox_format,SIGNAL(currentIndexChanged(int)),this,SLOT(formatChanged(int)));
     connect(ui->comboBox_size,SIGNAL(currentIndexChanged(int)),this,SLOT(framesizeChanged(int)));
     connect(ui->comboBox_fps,SIGNAL(currentIndexChanged(int)),this,SLOT(fpsChanged(int)));
+    connect(ui->pushButton_open,SIGNAL(clicked()),this,SLOT(openDevice()));
 
 }
 
 void MainWindow::openDevice()
 {
-    struct v4l2_format *fmt;
-    memset (fmt, 0, sizeof(struct v4l2_format));
+    struct v4l2_format fmt;
+    memset (&fmt, 0, sizeof(struct v4l2_format));
 
-    fmt->type = selected_pixformat->fmt.type;
-    fmt->fmt.pix.width = selected_framesize->frm_size.discrete.width;
-    fmt->fmt.pix.height = selected_framesize->frm_size.discrete.height;
-    fmt->fmt.pix.pixelformat = selected_pixformat->fmt.pixelformat;
-    fmt->fmt.pix.field = V4L2_FIELD_INTERLACED;
-    if(0 == setup_device(selected_camera,fmt))
+    fmt.type = selected_pixformat->fmt.type;
+    fmt.fmt.pix.width = selected_framesize->frm_size.discrete.width;
+    fmt.fmt.pix.height = selected_framesize->frm_size.discrete.height;
+    fmt.fmt.pix.pixelformat = selected_pixformat->fmt.pixelformat;
+    fmt.fmt.pix.field = V4L2_FIELD_INTERLACED;
+    if(0 == setup_device(selected_camera,&fmt))
     {
-        register_proc_cb(selected_camera,frameRecvCallback);
+        //register_proc_cb(selected_camera,frameRecvCallback);
+        ReadThread *readThread = new ReadThread(selected_camera);
+        PaintWidget *paintWidget = new PaintWidget(readThread);
+        connect(readThread,SIGNAL(frameReceived()),paintWidget,SLOT(update()));
+        readThread->start();
+        paintWidget->show();
     }
 
 }

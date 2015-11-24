@@ -44,7 +44,7 @@ static int v4l2_device_list_destory(v4l2_device_list *list)
 
 static int errno_info(const char *str)
 {
-	LOGE("%s error %d, %s", str, errno, strerror (errno));
+    LOGE("%s error %d, %s\n", str, errno, strerror (errno));
 	return -1;
 }
 
@@ -73,7 +73,7 @@ int find_devices(v4l2_device_list *v4l2_cameras)
         sprintf(dev_path,"/dev/video%d",i);
         //device file status
         if (-1 == stat (dev_path, &st)) {
-            LOGE("Cannot identify '%s': %d, %s", dev_path, errno, strerror (errno));
+            LOGE("Cannot identify '%s': %d, %s\n", dev_path, errno, strerror (errno));
             continue;
         }
         //is a char device ?
@@ -84,26 +84,26 @@ int find_devices(v4l2_device_list *v4l2_cameras)
         //try to open the device
         fd = open (dev_path, O_RDWR, 0);
         if (0 > fd){
-            LOGE("Cannot open '%s': %d, %s", dev_path, errno, strerror (errno));
+            LOGE("Cannot open '%s': %d, %s\n", dev_path, errno, strerror (errno));
             close(fd);
             continue;
         }
         //query the capabilities
         if (-1 == xioctl (fd, VIDIOC_QUERYCAP, &cap)){
             if (EINVAL == errno)
-                LOGE("%s is no V4L2 device", dev_path);
+                LOGE("%s is no V4L2 device\n", dev_path);
             else
                 LOGE("ioctl VIDIOC_QUERYCAP failed\n");
             close(fd);
             continue;
         }
         if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE)){
-            LOGE("%s is no video capture device", dev_path);
+            LOGE("%s is no video capture device\n", dev_path);
             close(fd);
             continue;
         }
         if (!(cap.capabilities & V4L2_CAP_STREAMING)) {
-            LOGE("%s does not support streaming i/o", dev_path);
+            LOGE("%s does not support streaming i/o\n", dev_path);
             close(fd);
             continue;
         }
@@ -127,7 +127,7 @@ int enum_device(v4l2_device_node *device)
     //try to open the device
     fd = open (device->dev_path, O_RDWR, 0);
     if (0 > fd){
-        LOGE("Cannot open '%s': %d, %s", device->dev_path, errno, strerror (errno));
+        LOGE("Cannot open '%s': %d, %s\n", device->dev_path, errno, strerror (errno));
         close(fd);
         return -1;
     }
@@ -265,7 +265,7 @@ int setup_device(v4l2_device_node *device,struct v4l2_format *fmt)
         return -1;
     }
 
-    if(-1 == xioctl(device->fd, VIDIOC_S_FMT, &fmt))
+    if(-1 == xioctl(device->fd, VIDIOC_S_FMT, fmt))
         return errno_info("VIDIOC_S_FMT");
 
     min = fmt->fmt.pix.width * 2; //YUYV
@@ -292,11 +292,11 @@ int setup_device(v4l2_device_node *device,struct v4l2_format *fmt)
         LOGE("Insufficient buffer memory on %s", device->dev_name);
         return -1;
     }
-    device->buf = calloc(buf_req.count,sizeof(buffer));
-    if(!device->buf){
-        LOGE("device->buf calloc failed\n");
-        return -1;
-    }
+    //device->buf = calloc(buf_req.count,sizeof(buffer));
+    //if(!device->buf){
+    //    LOGE("device->buf calloc failed\n");
+     //   return -1;
+  //  }
     //mmap the buffers to userspace
     for(i=0; i<buf_req.count; ++i){
         struct v4l2_buffer buf;
@@ -408,6 +408,12 @@ int read_frameonce(v4l2_device_node *device,char *data,int *length)
         }
         //hook the callback function
         process_image(device, &buf);
+        data = device->buf[buf.index].ptr;
+        *length = buf.length;
+
+        if (-1 == xioctl (device->fd,VIDIOC_QBUF, &buf))
+                return errno_info("VIDIOC_QBUF");
+
     }else if(0 == ret){
         LOGE("select timeout");
         return -1;
@@ -431,7 +437,7 @@ static int v1634_tbl[256];
 static int v833_tbl[256];
 static int u400_tbl[256];
 static int u2066_tbl[256];
-int yuyv422_to_abgr(unsigned char *dst,unsigned char *src,int height,int width)
+int yuyv422_to_abgr(char *dst,char *src,int height,int width)
 {
     int i;
     int frame_size = width*height*2;

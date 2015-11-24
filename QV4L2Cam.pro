@@ -14,9 +14,13 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    ImageProc.c
+    ImageProc.c \
+    paintwidget.cpp \
+    readthread.cpp
 
 HEADERS  += mainwindow.h \
-    ImageProc.h
+    ImageProc.h \
+    paintwidget.h \
+    readthread.h
 
 FORMS    += mainwindow.ui
